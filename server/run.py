@@ -11,6 +11,8 @@ TODO:
 
 Update move.py file - for radius to work, both motors need to fire
 Change direction 'no' to 'both'
+
+
 '''
 
 
@@ -98,7 +100,6 @@ second_line = Action(
 )
 
 
-
 #main_line_off_line_stop.action = turn_action
 #turn_stop.action = main_line_action
 
@@ -117,7 +118,8 @@ class Robot:
         move.setup()
 
         self.running = True
-        self.actions = [forward, p, turn, p, line, p , backup, p, turn_around, p, line]
+        self.actions = [forward, p, turn, p, line,
+                        p, backup, p, turn_around, p, line]
 
     def start(self):
         while self.running:
