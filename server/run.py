@@ -100,9 +100,29 @@ second_line = Action(
     t="line",
 )
 
-start = Action(
-    t=""
-)
+actions = [
+    Action(
+        t="rotate_servo",
+        servo_id=0,
+        angle=90
+    ),
+    Action(
+        t="rotate_servo",
+        servo_id=1,
+        angle=90
+    ),
+    Action(
+        t="rotate_servo",
+        servo_id=2,
+        angle=90
+    ),
+    Action(
+        t="move",
+        direction="forward",
+        speed=75,
+        stops=[Stop(t="duration", duration=.6)]
+    )
+]
 
 
 #main_line_off_line_stop.action = turn_action
@@ -126,7 +146,7 @@ class Robot:
         move.setup()
 
         self.running = True
-        self.actions = [start]
+        self.actions = actions
 
     def start(self):
         while self.running:
