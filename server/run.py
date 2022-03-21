@@ -1,6 +1,8 @@
 from nis import match
+from tracemalloc import start
 from turtle import Turtle, right, speed
 from unittest import case
+from RPIservo import ServoCtrl
 import RPi.GPIO as GPIO
 import time
 import move
@@ -98,12 +100,19 @@ second_line = Action(
     t="line",
 )
 
+start = Action(
+    t=""
+)
+
 
 #main_line_off_line_stop.action = turn_action
 #turn_stop.action = main_line_action
 
 class Robot:
     def __init__(self):
+        self.sc = ServoCtrl()
+        self.sc.start()
+
         self.line_pin_right = 19
         self.line_pin_middle = 16
         self.line_pin_left = 20
@@ -117,8 +126,7 @@ class Robot:
         move.setup()
 
         self.running = True
-        self.actions = [forward, p, turn, p, line,
-                        p, backup, p, turn_around, p, line]
+        self.actions = [start]
 
     def start(self):
         while self.running:
@@ -151,18 +159,19 @@ class Robot:
                 move.move(action.turn_speed, 'forward', 'right', 0.5)
             elif right_line_sensor == 1:
                 move.move(action.turn_speed, 'forward', 'left', 0.5)
-
-        if action.t == "move":
+        elif action.t == "move":
             move.move(action.speed,
                       action.direction,
                       "both",
                       1)
-
-        if action.t == "turn":
+        elif action.t == "turn":
             move.move(action.speed,
                       action.direction,
                       action.turn_direction,
                       action.radius if hasattr(action, "radius") else 1)
+        elif action.t == "rotate_servo":
+            if self.sc.moveAngle(action.servo_id, action.angle):
+                self.actions.pop(0)  # remove when finished
 
         # early stopping
         if hasattr(action, "stops"):
@@ -180,7 +189,6 @@ class Robot:
                     if time.time() - current_stop.start_time > current_stop.duration:
                         active = True
                 if active:
-                    print("STOP HIT")
                     move.motorStop()
                     self.actions.pop(0)
                     if hasattr(current_stop, "start_time"):
