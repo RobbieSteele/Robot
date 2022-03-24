@@ -103,17 +103,7 @@ second_line = Action(
 actions = [
     Action(
         t="rotate_servo",
-        servo_id=0,
-        angle=90
-    ),
-    Action(
-        t="rotate_servo",
-        servo_id=1,
-        angle=90
-    ),
-    Action(
-        t="rotate_servo",
-        servo_id=2,
+        servo_ids=[0, 1, 2],
         angle=90
     ),
     Action(
@@ -190,11 +180,13 @@ class Robot:
                       action.turn_direction,
                       action.radius if hasattr(action, "radius") else 1)
         elif action.t == "rotate_servo":
-            if self.sc.moveAngle(action.servo_id, action.angle):
-                self.actions.pop(0)  # remove when finished
+            # since all servos go to same angle, only remove action when all reached target angle (some may take longer than others)
+            if all(self.sc.moveAngle(servo_id, action.angle) for servo_id in action.servo_ids):
+                self.actions.pop(0)
 
         # early stopping
-        if hasattr(action, "stops"):
+        # added check to see make sure action wasn't removed above and is still the current action
+        if hasattr(action, "stops") and self.actions[-1] == action:
             for current_stop in action.stops:  # iterate over copy so we can remove
                 active = False
                 if current_stop.t == "on_line":
