@@ -48,58 +48,6 @@ class Stop:
             setattr(self, k, v)
 
 
-main_line_off_line_stop = Stop(
-    t="off_line"
-)
-
-line = Action(
-    t="line",
-    speed=50,
-    turn_speed=60,
-    stops=[Stop(t="duration", duration=7)]
-)
-
-p = Action(
-    t="empty",
-    stops=[Stop(t="duration", duration=1)]
-)
-
-backup = Action(
-    t="move",
-    direction="backward",
-    speed=60,
-    stops=[Stop(t="duration", duration=0.25)]
-)
-
-turn = Action(
-    t="turn",
-    direction="opposites",
-    turn_direction="right",
-    radius=1,
-    speed=60,
-    stops=[Stop(t="duration", duration=.8)]
-)
-
-forward = Action(
-    t="move",
-    direction="forward",
-    speed=75,
-    stops=[Stop(t="duration", duration=.6)]
-)
-
-turn_around = Action(
-    t="turn",
-    direction="opposites",
-    turn_direction="right",
-    radius=1,
-    speed=60,
-    stops=[Stop(t="duration", duration=2)]
-)
-
-second_line = Action(
-    t="line",
-)
-
 actions = [
     Action(
         t="rotate_servo",
@@ -111,12 +59,35 @@ actions = [
         direction="forward",
         speed=75,
         stops=[Stop(t="duration", duration=.6)]
+    ),
+    Action(
+        t="repeat",
+        actions=[
+            Action(
+                t="move",
+                direction="forward",
+                speed=75,
+                stops=[Stop(t="duration", duration=.6)]
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="move",
+                direction="backward",
+                speed=75,
+                stops=[Stop(t="duration", duration=.6)]
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+        ],
+        times=3
     )
 ]
 
-
-#main_line_off_line_stop.action = turn_action
-#turn_stop.action = main_line_action
 
 class Robot:
     def __init__(self):
@@ -182,6 +153,16 @@ class Robot:
         elif action.t == "rotate_servo":
             # since all servos go to same angle, only remove action when all reached target angle (some may take longer than others)
             if all(self.sc.moveAngle(servo_id, action.angle) for servo_id in action.servo_ids):
+                self.actions.pop(0)
+        elif action.t == "repeat":
+            if hasattr(action, "repeat_count"):
+                action.repeat_count += 1
+            else:
+                action.repeat_count = 1
+
+            if action.repeat_count < action.times:
+                actions = action.actions + actions
+            else:
                 self.actions.pop(0)
 
         # early stopping
