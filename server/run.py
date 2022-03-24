@@ -133,7 +133,7 @@ class Robot:
         # check for early stoppings
 
         if action.t == "line":
-            print(f"{left_line_sensor} {middle_line_sensor} {right_line_sensor}")
+            #print(f"{left_line_sensor} {middle_line_sensor} {right_line_sensor}")
             if middle_line_sensor == 0:
                 move.move(action.speed, 'forward', 'both')
             elif left_line_sensor == 1:
