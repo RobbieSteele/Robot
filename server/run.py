@@ -50,24 +50,26 @@ class Stop:
 
 actions = [
     Action(
-        t="rotate_servo",
-        servo_ids=[0, 1, 2],
-        angle=90
-    ),
-    Action(
-        t="move",
-        direction="forward",
-        speed=75,
-        stops=[Stop(t="duration", duration=.6)]
+        t="delay",
+        stops=[Stop(t="duration", duration=1)]
     ),
     Action(
         t="repeat",
         actions=[
             Action(
+                t="rotate_servo",
+                servo_ids=[0, 1, 2],
+                angle=0
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
                 t="move",
                 direction="forward",
-                speed=75,
-                stops=[Stop(t="duration", duration=.6)]
+                speed=50,
+                stops=[Stop(t="duration", duration=.25)]
             ),
             Action(
                 t="delay",
@@ -76,12 +78,46 @@ actions = [
             Action(
                 t="move",
                 direction="backward",
-                speed=75,
-                stops=[Stop(t="duration", duration=.6)]
+                speed=50,
+                stops=[Stop(t="duration", duration=.25)]
             ),
             Action(
                 t="delay",
                 stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="rotate_servo",
+                servo_ids=[0],
+                angle=90
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="rotate_servo",
+                servo_ids=[1],
+                angle=90
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="rotate_servo",
+                servo_ids=[2],
+                angle=90
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="turn",
+                direction="forward",
+                speed=50,
+                turn_direction="right",
+                stops=[Stop(t="duration", duration=.25)]
             ),
         ],
         times=3
@@ -151,8 +187,11 @@ class Robot:
                       action.turn_direction,
                       action.radius if hasattr(action, "radius") else 1)
         elif action.t == "rotate_servo":
-            # since all servos go to same angle, only remove action when all reached target angle (some may take longer than others)
-            if all(self.sc.moveAngle(servo_id, action.angle) for servo_id in action.servo_ids):
+            all_finished = True
+            for servo_id in action.servo_ids:
+                all_finished &= self.sc.moveAngle(servo_id, action.angle)
+
+            if all_finished:
                 self.actions.pop(0)
         elif action.t == "repeat":
             if hasattr(action, "repeat_count"):
@@ -160,14 +199,14 @@ class Robot:
             else:
                 action.repeat_count = 1
 
-            if action.repeat_count < action.times:
-                actions = action.actions + actions
+            if action.repeat_count <= action.times:
+                self.actions = action.actions.copy() + self.actions
             else:
                 self.actions.pop(0)
 
         # early stopping
         # added check to see make sure action wasn't removed above and is still the current action
-        if hasattr(action, "stops") and self.actions[-1] == action:
+        if hasattr(action, "stops") and self.actions[0] == action:
             for current_stop in action.stops:  # iterate over copy so we can remove
                 active = False
                 if current_stop.t == "on_line":
@@ -178,6 +217,7 @@ class Robot:
                         active = True
                 if current_stop.t == "duration":
                     if not hasattr(current_stop, "start_time"):
+                        print("STARTED TIMER")
                         current_stop.start_time = time.time()
                     if time.time() - current_stop.start_time > current_stop.duration:
                         active = True
@@ -199,3 +239,5 @@ if __name__ == '__main__':
         robot.start()
     except KeyboardInterrupt:
         robot.destroy()
+    robot.destroy()
+    exit()
