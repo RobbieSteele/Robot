@@ -1,6 +1,8 @@
 from nis import match
+from tracemalloc import start
 from turtle import Turtle, right, speed
 from unittest import case
+from RPIservo import ServoCtrl
 import RPi.GPIO as GPIO
 import time
 import move
@@ -109,9 +111,88 @@ second_line = Action(
 
 #main_line_off_line_stop.action = turn_action
 #turn_stop.action = main_line_action
+actions = [
+    Action(
+        t="delay",
+        stops=[Stop(t="duration", duration=1)]
+    ),
+    Action(
+        t="repeat",
+        actions=[
+            Action(
+                t="rotate_servo",
+                servo_ids=[0, 1, 2],
+                angle=0
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="move",
+                direction="forward",
+                speed=50,
+                stops=[Stop(t="duration", duration=.25)]
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="move",
+                direction="backward",
+                speed=50,
+                stops=[Stop(t="duration", duration=.25)]
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="rotate_servo",
+                servo_ids=[0],
+                angle=90
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="rotate_servo",
+                servo_ids=[1],
+                angle=90
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="rotate_servo",
+                servo_ids=[2],
+                angle=90
+            ),
+            Action(
+                t="delay",
+                stops=[Stop(t="duration", duration=1)]
+            ),
+            Action(
+                t="turn",
+                direction="forward",
+                speed=50,
+                turn_direction="right",
+                stops=[Stop(t="duration", duration=.25)]
+            ),
+        ],
+        times=3
+    )
+]
+
 
 class Robot:
     def __init__(self):
+        self.sc = ServoCtrl()
+        self.sc.start()
+
         self.line_pin_right = 19
         self.line_pin_middle = 16
         self.line_pin_left = 20
@@ -125,8 +206,7 @@ class Robot:
         move.setup()
 
         self.running = True
-        self.actions = [forward, p, turn, p, line,
-                        p, backup, p, turn_around, p, line]
+        self.actions = actions
 
     def start(self):
         while self.running:
@@ -152,28 +232,44 @@ class Robot:
         # check for early stoppings
 
         if action.t == "line":
-            print(f"{left_line_sensor} {middle_line_sensor} {right_line_sensor}")
+            #print(f"{left_line_sensor} {middle_line_sensor} {right_line_sensor}")
             if middle_line_sensor == 0:
                 move.move(action.speed, 'forward', 'both')
             elif left_line_sensor == 1:
                 move.move(action.turn_speed, 'forward', 'right', 0.5)
             elif right_line_sensor == 1:
                 move.move(action.turn_speed, 'forward', 'left', 0.5)
-
-        if action.t == "move":
+        elif action.t == "move":
             move.move(action.speed,
                       action.direction,
                       "both",
                       1)
-
-        if action.t == "turn":
+        elif action.t == "turn":
             move.move(action.speed,
                       action.direction,
                       action.turn_direction,
                       action.radius if hasattr(action, "radius") else 1)
+        elif action.t == "rotate_servo":
+            all_finished = True
+            for servo_id in action.servo_ids:
+                all_finished &= self.sc.moveAngle(servo_id, action.angle)
+
+            if all_finished:
+                self.actions.pop(0)
+        elif action.t == "repeat":
+            if hasattr(action, "repeat_count"):
+                action.repeat_count += 1
+            else:
+                action.repeat_count = 1
+
+            if action.repeat_count <= action.times:
+                self.actions = action.actions.copy() + self.actions
+            else:
+                self.actions.pop(0)
 
         # early stopping
-        if hasattr(action, "stops"):
+        # added check to see make sure action wasn't removed above and is still the current action
+        if hasattr(action, "stops") and self.actions[0] == action:
             for current_stop in action.stops:  # iterate over copy so we can remove
                 active = False
                 if current_stop.t == "on_line":
@@ -184,11 +280,11 @@ class Robot:
                         active = True
                 if current_stop.t == "duration":
                     if not hasattr(current_stop, "start_time"):
+                        print("STARTED TIMER")
                         current_stop.start_time = time.time()
                     if time.time() - current_stop.start_time > current_stop.duration:
                         active = True
                 if active:
-                    print("STOP HIT")
                     move.motorStop()
                     self.actions.pop(0)
                     if hasattr(current_stop, "start_time"):
@@ -206,3 +302,5 @@ if __name__ == '__main__':
         robot.start()
     except KeyboardInterrupt:
         robot.destroy()
+    robot.destroy()
+    exit()
