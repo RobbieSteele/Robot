@@ -5,6 +5,7 @@ import RPi.GPIO as GPIO
 import time
 import move
 
+
 '''
 TODO:
 
@@ -48,6 +49,11 @@ class Stop:
 
 main_line_off_line_stop = Stop(
     t="off_line"
+)
+
+swivel = Action(
+    speed = 30, 
+
 )
 
 line = Action(
@@ -97,6 +103,8 @@ turn_around = Action(
 second_line = Action(
     t="line",
 )
+
+
 
 
 #main_line_off_line_stop.action = turn_action
