@@ -49,66 +49,6 @@ class Stop:
             setattr(self, k, v)
 
 
-main_line_off_line_stop = Stop(
-    t="off_line"
-)
-
-swivel = Action(
-    speed = 30, 
-
-)
-
-line = Action(
-    t="line",
-    speed=50,
-    turn_speed=60,
-    stops=[Stop(t="duration", duration=7)]
-)
-
-p = Action(
-    t="empty",
-    stops=[Stop(t="duration", duration=1)]
-)
-
-backup = Action(
-    t="move",
-    direction="backward",
-    speed=60,
-    stops=[Stop(t="duration", duration=0.25)]
-)
-
-turn = Action(
-    t="turn",
-    direction="opposites",
-    turn_direction="right",
-    radius=1,
-    speed=60,
-    stops=[Stop(t="duration", duration=.8)]
-)
-
-forward = Action(
-    t="move",
-    direction="forward",
-    speed=75,
-    stops=[Stop(t="duration", duration=.6)]
-)
-
-turn_around = Action(
-    t="turn",
-    direction="opposites",
-    turn_direction="right",
-    radius=1,
-    speed=60,
-    stops=[Stop(t="duration", duration=2)]
-)
-
-second_line = Action(
-    t="line",
-)
-
-
-
-
 #main_line_off_line_stop.action = turn_action
 #turn_stop.action = main_line_action
 actions = [
