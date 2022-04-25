@@ -253,7 +253,7 @@ class ServoCtrl(threading.Thread):
         self.resume()
 
     def moveAngle(self, ID, angleInput):
-        changed = False
+        finished = False
         self.nowPos[ID] = int(
             self.initPos[ID] + self.sc_direction[ID]*self.pwmGenOut(angleInput))
         if self.nowPos[ID] > self.maxPos[ID]:
@@ -261,10 +261,10 @@ class ServoCtrl(threading.Thread):
         elif self.nowPos[ID] < self.minPos[ID]:
             self.nowPos[ID] = self.minPos[ID]
         if self.lastPos[ID] == self.nowPos[ID]:
-            chagned = True
+            finished = True
         self.lastPos[ID] = self.nowPos[ID]
         pwm.set_pwm(ID, 0, self.nowPos[ID])
-        return changed
+        return finished
 
     def scMove(self):
         if self.scMode == 'init':
